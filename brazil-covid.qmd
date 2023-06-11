@@ -1,0 +1,50 @@
+---
+title: "Brazil Coronavirus"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(astsa)
+```
+
+
+```{r message=FALSE}
+covid <- read_csv("archive/brazil_covid19.csv")
+```
+
+```{r}
+covid
+
+n_distinct(covid$region) # There are 5 regions
+n_distinct(covid$state) # There are 27 states
+
+# By region
+covid %>%
+  group_by(region, date) %>%
+  summarise(region_cases = sum(cases),
+            region_deaths = sum(deaths)) %>%
+  ggplot(aes(x = date, y = region_cases))+
+  geom_line(aes(group = region))
+
+# By state
+covid %>%
+  group_by(state, date) %>%
+  summarise(state_cases = sum(cases),
+            stat_deaths = sum(deaths)) %>%
+  ggplot(aes(x = date, y = state_cases))+
+  geom_line(aes(group = state))
+```
+
+```{r}
+macro <- read_csv("archive/brazil_covid19_macro.csv")
+macro
+```
+
+```{r}
+ggplot(macro, aes(x = date, y = log10(cases)))+
+  geom_line()#+
+#  xlim(as.Date("2021-03-01"), as.Date("2021-04-01"))
+
+ggsave('logcovid-cases.png')
+```

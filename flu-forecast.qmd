@@ -1,0 +1,34 @@
+---
+title: "STAT 626 Time Series - Group 1 Project - Forecasting the Flu"
+author: "Group 1 / Alex Hughes"
+format: html
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(astsa)
+theme_set(theme_bw())
+```
+
+```{r}
+flu <- read_csv("VIW_FNT.csv")
+head(flu)
+```
+
+```{r}
+InfA <- flu %>% 
+  group_by(ISO_WEEKSTARTDATE) %>%
+  summarise(total_fluA = sum(INF_A, na.rm = T))
+```
+
+```{r}
+ggplot(flu, aes(x = ISO_WEEKSTARTDATE, y = INF_A))+
+  geom_line()
+
+ggplot(InfA, aes(x = ISO_WEEKSTARTDATE, y = total_fluA))+
+  geom_line()+
+  labs(x = "Time (in weeks)", y = "Influenza A number of specimens")
+
+ggsave('InfA-by-year.png')
+```
+
