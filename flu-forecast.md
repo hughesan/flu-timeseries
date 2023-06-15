@@ -66,7 +66,7 @@ ggplot(InfA, aes(x = ISO_WEEKSTARTDATE, y = total_flu))+
   labs(x = "Time (in weeks)", y = "Influenza A number of specimens")
 ```
 
-![](flu-forecast_files/figure-gfm/unnamed-chunk-4-1.png)
+![](flu-forecast_files/figure-gfm/infA%20over%20time-1.png)
 
 ``` r
 ggsave('InfA-by-year.png')
@@ -82,7 +82,7 @@ ggplot(flu_df, aes(x = ISO_WEEKSTARTDATE, y = total_flu, color = subtype))+
   labs(x = "Time (in weeks)", y = "Number of specimens")
 ```
 
-![](flu-forecast_files/figure-gfm/unnamed-chunk-5-1.png)
+![](flu-forecast_files/figure-gfm/infA%20and%20infB%20over%20time-1.png)
 
 ``` r
 ggsave('InfA-vs-InfB-time-series.png')
