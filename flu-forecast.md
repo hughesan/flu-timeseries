@@ -2,11 +2,15 @@ STAT 626 Time Series - Group 1 Project - Forecasting the Flu
 ================
 Group 1 / Alex Hughes
 
+## Libraries and plot theme
+
 ``` r
 library(tidyverse)
 library(astsa)
 theme_set(theme_bw())
 ```
+
+## Flu data
 
 ``` r
 flu <- read_csv("VIW_FNT.csv")
@@ -30,6 +34,8 @@ head(flu)
     #   BVIC_2DEL <dbl>, BVIC_3DEL <dbl>, BVIC_NODEL <dbl>, BVIC_DELUNK <dbl>,
     #   BYAM <dbl>, BNOTDETERMINED <dbl>, INF_B <dbl>, INF_ALL <dbl>, …
 
+## Aggregate across countries to create flu count by date time series datasets for Influenza A, B, and all strains
+
 ``` r
 InfA <- flu %>% 
   group_by(ISO_WEEKSTARTDATE) %>%
@@ -49,6 +55,8 @@ InfAll <- flu %>% # contains more than just A and B; many strains
   summarise(total_flu = sum(INF_ALL, na.rm = T))
 ```
 
+## Plot Influenza A over time
+
 ``` r
 # ggplot(flu, aes(x = ISO_WEEKSTARTDATE, y = INF_A))+
 #   geom_line()
@@ -65,6 +73,8 @@ ggsave('InfA-by-year.png')
 ```
 
     Saving 7 x 5 in image
+
+## Plot Influenza A vs Influenza B over time
 
 ``` r
 ggplot(flu_df, aes(x = ISO_WEEKSTARTDATE, y = total_flu, color = subtype))+

@@ -4,18 +4,24 @@ author: "Group 1 / Alex Hughes"
 format: gfm
 ---
 
+## Libraries and plot theme
+
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(astsa)
 theme_set(theme_bw())
 ```
 
+## Flu data
+
 ```{r message=FALSE, warning=FALSE}
 flu <- read_csv("VIW_FNT.csv")
 head(flu)
 ```
 
-```{r}
+## Aggregate across countries to create flu count by date time series datasets for Influenza A, B, and all strains
+
+```{r 'aggregate datasets'}
 InfA <- flu %>% 
   group_by(ISO_WEEKSTARTDATE) %>%
   summarise(total_flu = sum(INF_A, na.rm = T))
@@ -34,8 +40,9 @@ InfAll <- flu %>% # contains more than just A and B; many strains
   summarise(total_flu = sum(INF_ALL, na.rm = T))
 ```
 
+## Plot Influenza A over time
 
-```{r}
+```{r 'infA over time'}
 # ggplot(flu, aes(x = ISO_WEEKSTARTDATE, y = INF_A))+
 #   geom_line()
 
@@ -46,7 +53,9 @@ ggplot(InfA, aes(x = ISO_WEEKSTARTDATE, y = total_flu))+
 ggsave('InfA-by-year.png')
 ```
 
-```{r}
+## Plot Influenza A vs Influenza B over time
+
+```{r 'infA and infB over time'}
 ggplot(flu_df, aes(x = ISO_WEEKSTARTDATE, y = total_flu, color = subtype))+
   geom_line()+
   labs(x = "Time (in weeks)", y = "Number of specimens")
