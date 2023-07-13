@@ -102,6 +102,8 @@ tsplot(flu$INF_A)
 Drought data was downloaded from
 https://droughtmonitor.unl.edu/DmData/DataDownload/DSCI.aspx
 
+Set 1/1/2001 to 12/31/2010
+
 ``` r
 dr <- read_csv("dm_export_20010101_20101231.csv")
 ```
@@ -118,7 +120,7 @@ dr <- read_csv("dm_export_20010101_20101231.csv")
 ``` r
 drought_clean <- dr %>%
   mutate(MapDate = ymd(MapDate)) %>%
-  mutate(MMWR_WEEK = epiweek(MapDate), #create mmwr week and year variables for matching w/ flu dataset
+  mutate(MMWR_WEEK = epiweek(MapDate), # create mmwr week and year variables for matching w/ flu dataset
          MMWR_YEAR = epiyear(MapDate))
 
 USAflu <- flu %>%
@@ -134,4 +136,26 @@ df <- left_join(USAflu, drought_clean, by = c("MMWR_WEEK", "MMWR_YEAR")) %>%
 df <- df[complete.cases(df[ , c("MMWR_WEEK", "MMWR_YEAR", "INF_A", "INF_B", "INF_ALL", "DSCI")]), ] 
 
 write_csv(df, 'complete-flu-drought-2001-2010.csv')
+```
+
+# Merge flu and google flu trends
+
+``` r
+trends <- readxl::read_excel("Flue 2004-2014 weekly.xls")
+
+trends_merge_ready <- trends %>%
+  mutate(MMWR_WEEK = epiweek(Week), # create mmwr week and year variables for matching
+         MMWR_YEAR = epiyear(Week)) %>%
+  rename(flu_searches = `flu: (United States)`) 
+
+flu_drought_searches <- left_join(df, trends_merge_ready, by = c("MMWR_WEEK", "MMWR_YEAR")) %>% # this dataset has the 2001 to 2010 date range even though searches data doesn't start until 2004
+  dplyr::select(!Week)
+
+write_csv(flu_drought_searches, 'flu-and-drought-and-googletrends.csv')
+
+# also create a version that only spans dates present in all 3 datasets:
+
+flu_drought_searches %>%
+  filter(!is.na(flu_searches)) %>%
+  write_csv('flu-and-drought-and-googletrends-2004-2010.csv')
 ```
