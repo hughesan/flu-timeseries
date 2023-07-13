@@ -9,6 +9,7 @@ format: gfm
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(astsa)
+library(lubridate)
 theme_set(theme_bw())
 ```
 
@@ -61,5 +62,36 @@ ggplot(flu_df, aes(x = ISO_WEEKSTARTDATE, y = total_flu, color = subtype))+
   labs(x = "Time (in weeks)", y = "Number of specimens")
 
 ggsave('InfA-vs-InfB-time-series.png')
+```
+
+```{r}
+tsplot(flu$INF_A)
+```
+
+# Merge flu and drought
+
+Drought data was downloaded from https://droughtmonitor.unl.edu/DmData/DataDownload/DSCI.aspx
+
+```{r}
+dr <- read_csv("dm_export_20010101_20101231.csv")
+
+drought_clean <- dr %>%
+  mutate(MapDate = ymd(MapDate)) %>%
+  mutate(MMWR_WEEK = epiweek(MapDate), #create mmwr week and year variables for matching w/ flu dataset
+         MMWR_YEAR = epiyear(MapDate))
+
+USAflu <- flu %>%
+  filter(COUNTRY_CODE == "USA") %>%
+  filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31") & MMWR_WEEKSTARTDATE <= as.Date("2010-12-31")) %>%
+  dplyr::select(MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
+
+df <- left_join(USAflu, drought_clean, by = c("MMWR_WEEK", "MMWR_YEAR")) %>%
+  arrange(MapDate)
+
+# want complete cases only
+
+df <- df[complete.cases(df[ , c("MMWR_WEEK", "MMWR_YEAR", "INF_A", "INF_B", "INF_ALL", "DSCI")]), ] 
+
+write_csv(df, 'complete-flu-drought-2001-2010.csv')
 ```
 
