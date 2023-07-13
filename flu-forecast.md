@@ -7,6 +7,7 @@ Group 1 / Alex Hughes
 ``` r
 library(tidyverse)
 library(astsa)
+library(lubridate)
 theme_set(theme_bw())
 ```
 
@@ -18,21 +19,21 @@ head(flu)
 ```
 
     # A tibble: 6 × 49
-      WHOREGION FLUSEASON HEMISPH…¹ ITZ   COUNT…² COUNT…³ ISO_WEEK…⁴ ISO_Y…⁵ ISO_W…⁶
-      <chr>     <chr>     <chr>     <chr> <chr>   <chr>   <date>       <dbl>   <dbl>
-    1 EUR       NH        NH        FLU_… PRT     Portug… 2003-12-15    2003      51
-    2 AMR       YR        NH        FLU_… HND     Hondur… 2009-10-12    2009      42
-    3 AMR       YR        NH        FLU_… HND     Hondur… 2016-01-25    2016       4
-    4 AFR       YR        NH        FLU_… MLI     Mali    2013-11-25    2013      48
-    5 EUR       NH        NH        FLU_… IRL     Ireland 2000-11-06    2000      45
-    6 EMR       YR        NH        FLU_… JOR     Jordan  2019-01-28    2019       5
-    # … with 40 more variables: MMWR_WEEKSTARTDATE <date>, MMWR_YEAR <dbl>,
+      WHOREGION FLUSEASON HEMISPHERE ITZ         COUNTRY_CODE COUNTRY_AREA_TERRITORY
+      <chr>     <chr>     <chr>      <chr>       <chr>        <chr>                 
+    1 EUR       NH        NH         FLU_SW_EUR  PRT          Portugal              
+    2 AMR       YR        NH         FLU_CNT_AMC HND          Honduras              
+    3 AMR       YR        NH         FLU_CNT_AMC HND          Honduras              
+    4 AFR       YR        NH         FLU_WST_AFR MLI          Mali                  
+    5 EUR       NH        NH         FLU_NTH_EUR IRL          Ireland               
+    6 EMR       YR        NH         FLU_WST_AS… JOR          Jordan                
+    # ℹ 43 more variables: ISO_WEEKSTARTDATE <date>, ISO_YEAR <dbl>,
+    #   ISO_WEEK <dbl>, MMWR_WEEKSTARTDATE <date>, MMWR_YEAR <dbl>,
     #   MMWR_WEEK <dbl>, ORIGIN_SOURCE <chr>, SPEC_PROCESSED_NB <dbl>,
     #   SPEC_RECEIVED_NB <dbl>, AH1N12009 <dbl>, AH1 <dbl>, AH3 <dbl>, AH5 <dbl>,
     #   AH7N9 <dbl>, ANOTSUBTYPED <dbl>, ANOTSUBTYPABLE <dbl>,
     #   AOTHER_SUBTYPE <dbl>, AOTHER_SUBTYPE_DETAILS <dbl>, INF_A <dbl>,
-    #   BVIC_2DEL <dbl>, BVIC_3DEL <dbl>, BVIC_NODEL <dbl>, BVIC_DELUNK <dbl>,
-    #   BYAM <dbl>, BNOTDETERMINED <dbl>, INF_B <dbl>, INF_ALL <dbl>, …
+    #   BVIC_2DEL <dbl>, BVIC_3DEL <dbl>, BVIC_NODEL <dbl>, BVIC_DELUNK <dbl>, …
 
 ## Aggregate across countries to create flu count by date time series datasets for Influenza A, B, and all strains
 
@@ -89,3 +90,48 @@ ggsave('InfA-vs-InfB-time-series.png')
 ```
 
     Saving 7 x 5 in image
+
+``` r
+tsplot(flu$INF_A)
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-3-1.png)
+
+# Merge flu and drought
+
+Drought data was downloaded from
+https://droughtmonitor.unl.edu/DmData/DataDownload/DSCI.aspx
+
+``` r
+dr <- read_csv("dm_export_20010101_20101231.csv")
+```
+
+    Rows: 523 Columns: 3
+    ── Column specification ────────────────────────────────────────────────────────
+    Delimiter: ","
+    chr (1): Name
+    dbl (2): MapDate, DSCI
+
+    ℹ Use `spec()` to retrieve the full column specification for this data.
+    ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+drought_clean <- dr %>%
+  mutate(MapDate = ymd(MapDate)) %>%
+  mutate(MMWR_WEEK = epiweek(MapDate), #create mmwr week and year variables for matching w/ flu dataset
+         MMWR_YEAR = epiyear(MapDate))
+
+USAflu <- flu %>%
+  filter(COUNTRY_CODE == "USA") %>%
+  filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31") & MMWR_WEEKSTARTDATE <= as.Date("2010-12-31")) %>%
+  dplyr::select(MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
+
+df <- left_join(USAflu, drought_clean, by = c("MMWR_WEEK", "MMWR_YEAR")) %>%
+  arrange(MapDate)
+
+# want complete cases only
+
+df <- df[complete.cases(df[ , c("MMWR_WEEK", "MMWR_YEAR", "INF_A", "INF_B", "INF_ALL", "DSCI")]), ] 
+
+write_csv(df, 'complete-flu-drought-2001-2010.csv')
+```
