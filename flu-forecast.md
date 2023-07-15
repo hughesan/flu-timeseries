@@ -159,3 +159,177 @@ flu_drought_searches %>%
   filter(!is.na(flu_searches)) %>%
   write_csv('flu-and-drought-and-googletrends-2004-2010.csv')
 ```
+
+# Consider possible models
+
+auto.arima function uses stepwise selection to find the best possible
+model
+
+``` r
+y1 <- flu_drought_searches$INF_A
+
+flulog <- log(y1+1)
+
+difftslog <- diff(flulog)
+tsplot(difftslog)
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-6-1.png)
+
+``` r
+# for(i in 2:52){ # we've diffed once, go 51 more times to complete the year
+#   difftslog <- diff(difftslog)
+# }
+# diffed52times <- difftslog
+# tsplot(diffed52times)
+
+library(forecast)
+```
+
+    Warning: package 'forecast' was built under R version 4.2.3
+
+    Registered S3 method overwritten by 'quantmod':
+      method            from
+      as.zoo.data.frame zoo 
+
+
+    Attaching package: 'forecast'
+
+    The following object is masked from 'package:astsa':
+
+        gas
+
+``` r
+aamod <- auto.arima(flulog, ic = "bic") # suggests arima(1,1,2) (diff is 1 because flulog hasn't been diffed yet)
+aamod
+```
+
+    Series: flulog 
+    ARIMA(1,1,2) 
+
+    Coefficients:
+             ar1      ma1     ma2
+          0.8327  -0.9070  0.2384
+    s.e.  0.0477   0.0647  0.0461
+
+    sigma^2 = 0.3141:  log likelihood = -392.56
+    AIC=793.12   AICc=793.2   BIC=809.72
+
+``` r
+plot(forecast(aamod))
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-6-2.png)
+
+``` r
+aamod_diff1 <- auto.arima(diff(flulog), ic = "bic") # suggests arima(1,0,2) (diff now 0 because already diffed)
+aamod_diff1
+```
+
+    Series: diff(flulog) 
+    ARIMA(1,0,2) with zero mean 
+
+    Coefficients:
+             ar1      ma1     ma2
+          0.8327  -0.9070  0.2384
+    s.e.  0.0477   0.0647  0.0461
+
+    sigma^2 = 0.3141:  log likelihood = -392.56
+    AIC=793.12   AICc=793.2   BIC=809.72
+
+``` r
+plot(forecast(aamod_diff1))
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-6-3.png)
+
+``` r
+aamod_diff1
+```
+
+    Series: diff(flulog) 
+    ARIMA(1,0,2) with zero mean 
+
+    Coefficients:
+             ar1      ma1     ma2
+          0.8327  -0.9070  0.2384
+    s.e.  0.0477   0.0647  0.0461
+
+    sigma^2 = 0.3141:  log likelihood = -392.56
+    AIC=793.12   AICc=793.2   BIC=809.72
+
+### Residuals and Ljung-Box-Pierce Q test
+
+The Q test gives p = .06542, so at the alpha = 0.05 level we fail to
+reject the null hypothesis that the model residuals are independently
+distributed.
+
+``` r
+Box.test(aamod_diff1$residuals, lag = log(length(aamod_diff1$residuals)))
+```
+
+
+        Box-Pierce test
+
+    data:  aamod_diff1$residuals
+    X-squared = 12.068, df = 6.1506, p-value = 0.06542
+
+``` r
+plot(aamod_diff1$residuals) # still looks like there are some "outlier" residuals (abs values > 2)
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-7-1.png)
+
+## Try SARIMA? (Ignore)
+
+Maybe weekly (s = 52)?
+
+``` r
+acf(diff(diff(flulog), 52), lag.max = 104)
+acf(diff(diff(flulog), 52), lag.max = 104)
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-8-1.png)
+
+The function arima() is from the stats package (stats::arima) whereas
+the function sarima is from the astsa package. I think they do the same
+thing but the arguments are ordered differently.
+
+``` r
+mod <- stats::arima(x = flulog, 
+             order = c(1, 1, 2), # p, d, q
+             seasonal = list(order = c(0, 1, 2), period = 52)) 
+summary(mod)
+```
+
+
+    Call:
+    stats::arima(x = flulog, order = c(1, 1, 2), seasonal = list(order = c(0, 1, 
+        2), period = 52))
+
+    Coefficients:
+             ar1      ma1     ma2     sma1     sma2
+          0.8503  -0.9322  0.2534  -0.8977  -0.1019
+    s.e.  0.0439   0.0655  0.0500   0.1501   0.0555
+
+    sigma^2 estimated as 0.3047:  log likelihood = -396.96,  aic = 805.91
+
+    Training set error measures:
+                         ME      RMSE       MAE MPE MAPE      MASE       ACF1
+    Training set 0.01703105 0.5199853 0.3527984 NaN  Inf 0.8371537 0.01663746
+
+``` r
+mod
+```
+
+
+    Call:
+    stats::arima(x = flulog, order = c(1, 1, 2), seasonal = list(order = c(0, 1, 
+        2), period = 52))
+
+    Coefficients:
+             ar1      ma1     ma2     sma1     sma2
+          0.8503  -0.9322  0.2534  -0.8977  -0.1019
+    s.e.  0.0439   0.0655  0.0500   0.1501   0.0555
+
+    sigma^2 estimated as 0.3047:  log likelihood = -396.96,  aic = 805.91
