@@ -128,6 +128,11 @@ USAflu <- flu %>%
   filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31") & MMWR_WEEKSTARTDATE <= as.Date("2010-12-31")) %>%
   dplyr::select(MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
 
+USAflu_2001 <- flu %>%
+  filter(COUNTRY_CODE == "USA") %>%
+  filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31")) %>%
+  dplyr::select(MMWR_WEEKSTARTDATE, MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
+
 df <- left_join(USAflu, drought_clean, by = c("MMWR_WEEK", "MMWR_YEAR")) %>%
   arrange(MapDate)
 
@@ -280,16 +285,62 @@ plot(aamod_diff1$residuals) # still looks like there are some "outlier" residual
 
 ![](flu-forecast_files/figure-gfm/unnamed-chunk-7-1.png)
 
-## Try SARIMA? (Ignore)
+``` r
+qqnorm(aamod_diff1$residuals)
+```
 
-Maybe weekly (s = 52)?
+![](flu-forecast_files/figure-gfm/unnamed-chunk-7-2.png)
 
 ``` r
-acf(diff(diff(flulog), 52), lag.max = 104)
-acf(diff(diff(flulog), 52), lag.max = 104)
+plot(density(aamod_diff1$residuals))
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-7-3.png)
+
+## Try SARIMA? (Ignore)
+
+### Seasonal ACF, PACF
+
+``` r
+acf(diff(flulog, 52), lag.max = 104)
 ```
 
 ![](flu-forecast_files/figure-gfm/unnamed-chunk-8-1.png)
+
+``` r
+acf2(diff(flulog, 52))
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-8-2.png)
+
+         [,1] [,2]  [,3]  [,4]  [,5]  [,6] [,7]  [,8]  [,9] [,10] [,11] [,12] [,13]
+    ACF  0.97 0.94  0.90  0.86  0.81  0.75 0.69  0.63  0.56  0.50  0.44  0.38  0.33
+    PACF 0.97 0.02 -0.16 -0.14 -0.05 -0.22 0.02 -0.08 -0.03 -0.09  0.09  0.06  0.09
+         [,14] [,15] [,16] [,17] [,18] [,19] [,20] [,21] [,22] [,23] [,24] [,25]
+    ACF   0.28  0.24  0.19  0.15  0.11  0.08  0.04  0.01 -0.02 -0.06 -0.09 -0.12
+    PACF -0.03 -0.02 -0.06 -0.02 -0.01 -0.10 -0.04  0.00 -0.02 -0.03 -0.01  0.01
+         [,26] [,27] [,28] [,29] [,30] [,31]
+    ACF  -0.14 -0.17 -0.19 -0.21 -0.24 -0.25
+    PACF  0.01 -0.05  0.01 -0.04 -0.03 -0.01
+
+``` r
+acf2(diff(diff(cardox, 12)))
+```
+
+![](flu-forecast_files/figure-gfm/unnamed-chunk-9-1.png)
+
+          [,1]  [,2]  [,3]  [,4] [,5]  [,6]  [,7]  [,8] [,9] [,10] [,11] [,12]
+    ACF  -0.32  0.01 -0.08 -0.02 0.06 -0.02  0.00 -0.01 0.11 -0.07  0.16 -0.46
+    PACF -0.32 -0.11 -0.12 -0.10 0.01 -0.01 -0.01 -0.01 0.12  0.01  0.18 -0.40
+         [,13] [,14] [,15] [,16] [,17] [,18] [,19] [,20] [,21] [,22] [,23] [,24]
+    ACF   0.12  0.06 -0.02  0.04 -0.08  0.05 -0.04  0.00 -0.06  0.03 -0.01 -0.02
+    PACF -0.17 -0.02 -0.07 -0.04 -0.04  0.02 -0.01 -0.03  0.01 -0.01  0.07 -0.27
+         [,25] [,26] [,27] [,28] [,29] [,30] [,31] [,32] [,33] [,34] [,35] [,36]
+    ACF   0.02 -0.07  0.08 -0.03  0.04 -0.02 -0.03  0.03  0.00  0.05 -0.02  0.02
+    PACF -0.14 -0.09 -0.02 -0.02 -0.01  0.04 -0.05 -0.03 -0.01  0.04  0.06 -0.18
+         [,37] [,38] [,39] [,40] [,41] [,42] [,43] [,44] [,45] [,46] [,47] [,48]
+    ACF   0.03  0.00 -0.05 -0.01  0.02 -0.02  0.01  0.02 -0.02 -0.02  0.05 -0.03
+    PACF -0.02 -0.05 -0.04 -0.06 -0.02 -0.02 -0.12  0.00 -0.05  0.00  0.09 -0.12
 
 The function arima() is from the stats package (stats::arima) whereas
 the function sarima is from the astsa package. I think they do the same
@@ -333,3 +384,5 @@ mod
     s.e.  0.0439   0.0655  0.0500   0.1501   0.0555
 
     sigma^2 estimated as 0.3047:  log likelihood = -396.96,  aic = 805.91
+
+## Flu search / drought data

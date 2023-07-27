@@ -87,6 +87,11 @@ USAflu <- flu %>%
   filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31") & MMWR_WEEKSTARTDATE <= as.Date("2010-12-31")) %>%
   dplyr::select(MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
 
+USAflu_2001 <- flu %>%
+  filter(COUNTRY_CODE == "USA") %>%
+  filter(MMWR_WEEKSTARTDATE > as.Date("2000-12-31")) %>%
+  dplyr::select(MMWR_WEEKSTARTDATE, MMWR_WEEK, MMWR_YEAR, INF_A, INF_B, INF_ALL)
+
 df <- left_join(USAflu, drought_clean, by = c("MMWR_WEEK", "MMWR_YEAR")) %>%
   arrange(MapDate)
 
@@ -160,17 +165,25 @@ The Q test gives p = .06542, so at the alpha = 0.05 level we fail to reject the 
 Box.test(aamod_diff1$residuals, lag = log(length(aamod_diff1$residuals)))
 
 plot(aamod_diff1$residuals) # still looks like there are some "outlier" residuals (abs values > 2)
+qqnorm(aamod_diff1$residuals)
+plot(density(aamod_diff1$residuals))
 ```
 
 
 ## Try SARIMA? (Ignore)
 
-Maybe weekly (s = 52)?
+### Seasonal ACF, PACF
 
 ```{r}
-acf(diff(diff(flulog), 52), lag.max = 104)
-acf(diff(diff(flulog), 52), lag.max = 104)
+acf(diff(flulog, 52), lag.max = 104)
+acf2(diff(flulog, 52))
 ```
+
+```{r}
+acf2(diff(diff(cardox, 12)))
+```
+
+
 
 The function arima() is from the stats package (stats::arima) whereas the function sarima is from the astsa package. I think they do the same thing but the arguments are ordered differently.
 
@@ -183,3 +196,4 @@ mod
 ```
 
 ## Flu search / drought data
+
