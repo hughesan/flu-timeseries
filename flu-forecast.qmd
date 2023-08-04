@@ -134,6 +134,8 @@ y1 <- flu_drought_searches$INF_A
 
 flulog <- log(y1+1)
 
+full_flulog <- log(USAflu_2001$INF_A + 1)
+
 difftslog <- diff(flulog)
 tsplot(difftslog)
 
@@ -170,30 +172,47 @@ plot(density(aamod_diff1$residuals))
 ```
 
 
-## Try SARIMA? (Ignore)
+## Try SARIMA
 
 ### Seasonal ACF, PACF
 
 ```{r}
-acf(diff(flulog, 52), lag.max = 104)
-acf2(diff(flulog, 52))
+acf2(flulog, max.lag = 420)
 ```
 
 ```{r}
-acf2(diff(diff(cardox, 12)))
+sarima(flulog, p=1,d=1,q=2, P=0,D=1, Q=2, S=52 )
+
+auto.arima(diff(diff(flulog, 52)))
+
+acf2(diff(diff(flulog, 52)), max.lag = 260)
+
+sarima(diff(diff(flulog, 52)), p=5, d=0, q=3, P=0, D=0, Q=1, S=52)
 ```
 
-
-
-The function arima() is from the stats package (stats::arima) whereas the function sarima is from the astsa package. I think they do the same thing but the arguments are ordered differently.
 
 ```{r}
-mod <- stats::arima(x = flulog, 
-             order = c(1, 1, 2), # p, d, q
-             seasonal = list(order = c(0, 1, 2), period = 52)) 
-summary(mod)
-mod
+readyflu <- diff(diff(flulog, 52))
+
+tsplot(diff(diff(readyflu, 52)))
+
+twoSdiffs_flu <- diff(readyflu, 52)
+tsplot(twoSdiffs_flu)
+
+acf2(twoSdiffs_flu, max.lag = 180) # ACF cuts off after 1 (52 week peak), PACF tails P=0,D=0,Q=1
+tsplot(twoSdiffs_flu)
+
+sarima(twoSdiffs_flu, p=1,q=1,d=2,P=0,D=1,Q=1,S=52)
 ```
 
-## Flu search / drought data
+```{r}
+diffed_flulog <- diff(diff(flulog, 52))
+acf2(diffed_flulog, max.lag = 320)
+sarima(diffed_flulog, 1, 1, 2, 0, 0, 1, S=52)
+```
+
+
+
+
+
 
